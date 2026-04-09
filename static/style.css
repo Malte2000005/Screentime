@@ -1,0 +1,158 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #eef4ff;
+    margin: 0;
+    padding: 0;
+    color: #0f172a;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #1d4ed8;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #334155;
+}
+
+.card {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+    margin-top: 0;
+    color: #1e3a8a;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.stat-card {
+    text-align: center;
+}
+
+.big-number {
+    font-size: 30px;
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.top3-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.top-card {
+    background-color: #eff6ff;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #dbeafe;
+}
+
+.rank {
+    font-weight: bold;
+    color: #1d4ed8;
+    margin-bottom: 8px;
+}
+
+.app-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.app-minutes {
+    color: #334155;
+}
+
+.chart-wrapper {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+#pieChart {
+    max-width: 850px;
+    max-height: 450px;
+    display: block;
+    margin: 0 auto;
+}
+
+#usageChart {
+    max-height: 400px;
+}
+
+.chart-info {
+    color: #475569;
+    margin-bottom: 15px;
+}
+
+.selected-person {
+    margin-top: 15px;
+    color: #334155;
+}
+
+form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+select,
+button {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #1d4ed8;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dbeafe;
+}
+
+th {
+    background-color: #dbeafe;
+    color: #1e3a8a;
+}
+
+tr:nth-child(even) {
+    background-color: #f8fbff;
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Bildschirmzeit Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Bildschirmzeit Dashboard</h1>
+        <p class="subtitle">Auswertung der App-Nutzung aus CSV-Dateien</p>
+
+        <div class="card">
+            <h2>Person auswählen</h2>
+            <form method="get" action="/">
+                <label for="person">Statistik:</label>
+                <select name="person" id="person">
+                    {% for person_key, person_data in people.items() %}
+                        <option value="{{ person_key }}" {% if person_key == selected_person %}selected{% endif %}>
+                            {{ person_data.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Anzeigen</button>
+            </form>
+
+            <p class="selected-person">
+                Aktuell ausgewählt: <strong>{{ selected_person_label }}</strong>
+            </p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="card stat-card">
+                <h2>Gesamtzeit</h2>
+                <p class="big-number">{{ total_minutes }} Min.</p>
+            </div>
+
+            <div class="card stat-card">
+                <h2>Erkannte Apps</h2>
+                <p class="big-number">{{ app_count }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Top 3 Apps</h2>
+            <div class="top3-grid">
+                {% for app in top3 %}
+                <div class="top-card">
+                    <div class="rank">#{{ loop.index }}</div>
+                    <div class="app-name">{{ app.App }}</div>
+                    <div class="app-minutes">{{ app.Minuten|round(2) }} Min.</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Kuchendiagramm – Top 10 Apps</h2>
+            <p class="chart-info">
+                Mit der Maus über die Segmente fahren, um Minuten und Prozentanteil zu sehen.
+            </p>
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Balkendiagramm</h2>
+            <div class="chart-wrapper">
+                <canvas id="usageChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Alle Apps</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>App</th>
+                        <th>Minuten</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in top_apps %}
+                    <tr>
+                        <td>{{ app.App }}</td>
+                        <td>{{ app.Minuten|round(2) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const barLabels = {{ top_apps | map(attribute='App') | list | tojson }};
+        const barData = {{ top_apps | map(attribute='Minuten') | list | tojson }};
+
+        const pieLabels = {{ pie_apps | map(attribute='App') | list | tojson }};
+        const pieData = {{ pie_apps | map(attribute='Minuten') | list | tojson }};
+
+        const chartColors = [
+            "#1d4ed8",
+            "#3b82f6",
+            "#60a5fa",
+            "#93c5fd",
+            "#2563eb",
+            "#1e40af",
+            "#0f172a",
+            "#38bdf8",
+            "#7dd3fc",
+            "#bfdbfe"
+        ];
+
+        const barCanvas = document.getElementById("usageChart");
+        if (barCanvas && barData.length > 0) {
+            const barContext = barCanvas.getContext("2d");
+
+            new Chart(barContext, {
+                type: "bar",
+                data: {
+                    labels: barLabels,
+                    datasets: [{
+                        label: "Minuten pro App",
+                        data: barData,
+                        backgroundColor: "#2563eb",
+                        borderColor: "#1d4ed8",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "#1e3a8a"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: "#1e3a8a"
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const pieCanvas = document.getElementById("pieChart");
+        if (pieCanvas && pieData.length > 0) {
+            const totalPieMinutes = pieData.reduce((sum, value) => sum + value, 0);
+            const pieContext = pieCanvas.getContext("2d");
+
+            new Chart(pieContext, {
+                type: "pie",
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: chartColors,
+                        borderColor: "#ffffff",
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: "right"
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const percentage = ((value / totalPieMinutes) * 100).toFixed(1);
+                                    return context.label + ": " + value.toFixed(2) + " Min. (" + percentage + "%)";
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
