@@ -17,16 +17,6 @@ PEOPLE = {
 
 
 def read_screen_time_file(file_path):
-    """
-    Liest eine einzelne CSV-Datei mit Bildschirmzeit-Daten ein.
-
-    Parameter:
-        file_path (str): Pfad zur CSV-Datei.
-
-    Rückgabewert:
-        list[dict]: Liste mit Datensätzen in der Form
-                    {"App": app_name, "Minuten": minutes}.
-    """
     records = []
 
     with open(file_path, "r", encoding="utf-8") as file:
@@ -63,15 +53,6 @@ def read_screen_time_file(file_path):
 
 
 def load_data_for_person(folder_path):
-    """
-    Liest alle CSV-Dateien aus einem Ordner ein und erstellt ein DataFrame.
-
-    Parameter:
-        folder_path (str): Ordner mit CSV-Dateien.
-
-    Rückgabewert:
-        pandas.DataFrame: DataFrame mit den Spalten "App" und "Minuten".
-    """
     all_records = []
 
     if not os.path.exists(folder_path):
@@ -88,9 +69,6 @@ def load_data_for_person(folder_path):
 
 
 def summarize_app_usage(data_frame):
-    """
-    Gruppiert die Daten nach App und summiert die Nutzungszeit.
-    """
     if data_frame.empty:
         return pd.DataFrame(columns=["App", "Minuten"])
 
@@ -105,15 +83,6 @@ def summarize_app_usage(data_frame):
 
 
 def build_dashboard_data(selected_person):
-    """
-    Erstellt alle Werte für das Dashboard.
-
-    Parameter:
-        selected_person (str): Name der ausgewählten Person.
-
-    Rückgabewert:
-        dict: Werte für das HTML-Template.
-    """
     if selected_person not in PEOPLE:
         selected_person = "Julian"
 
@@ -153,10 +122,6 @@ def build_dashboard_data(selected_person):
 
 @app.route("/")
 def index():
-    """
-    Startseite des Dashboards.
-    Die Person wird über den URL-Parameter 'person' ausgewählt.
-    """
     selected_person = request.args.get("person", "Julian")
     dashboard_data = build_dashboard_data(selected_person)
 
