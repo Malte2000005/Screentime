@@ -17,51 +17,79 @@ PEOPLE: Dict[str, Dict[str, str]] = {
 
 def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
     """
-    Erkennt automatisch, ob es Maltes Format oder Julians Apple-Export ist.
-    Anforderung: Error Handling & Modularisierung.
+    Liest verschiedene CSV-Formate ein:
+    1) Neues bereinigtes Format: App,Minutes
+    2) Maltes Format: App,Datum,Sekunden
+    3) Apple-/älteres Format mit 'Sek.'
     """
     records = []
     file_name = os.path.basename(file_path)
-    # Fallback Datum aus Dateiname, falls es nicht in der Zeile steht (Apple Export)
+
     date_from_name = file_name.replace("screen_time_", "").replace(".csv", "")
 
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
-                line = line.strip().replace('\u200e', '') # Apple-Spezialzeichen weg
-                if not line or line.lower().startswith("app") or line.lower().startswith("name"):
+                line = line.strip().replace('\u200e', '')
+                if not line:
                     continue
 
-                parts = line.split(",")
-                if len(parts) < 3: continue
+                lower = line.lower()
+                if lower.startswith("app") or lower.startswith("name"):
+                    continue
 
-                # LOGIK 1: Apple Export (Julian) - Ende ist "954 Sek."
-                if "Sek." in line:
-                    app_name = parts[0].strip()
-                    if app_name.lower() in ["screentimeunlock", ""]: continue
+                parts = [p.strip() for p in line.split(",")]
+
+                # FORMAT 1: Neues bereinigtes Format -> App,Minutes
+                if len(parts) == 2:
                     try:
-                        raw_sec = parts[-1].replace("Sek.", "").strip().replace(".", "")
+                        app_name = parts[0]
+                        minuten = float(parts[1].replace(",", "."))
                         records.append({
                             "App": app_name,
                             "Datum": date_from_name,
-                            "Minuten": float(raw_sec) / 60
+                            "Minuten": minuten
                         })
-                    except ValueError: continue
+                        continue
+                    except ValueError:
+                        pass
 
-                # LOGIK 2: Maltes Format - App, Datum, Sekunden
-                else:
+                # FORMAT 2: Apple-/älteres Format mit "Sek."
+                if "Sek." in line:
                     try:
-                        app_name = parts[0].strip()
-                        datum = parts[1].strip()
-                        sekunden = float(parts[2].strip())
+                        app_name = parts[0]
+                        if app_name.lower() in ["screentimeunlock", ""]:
+                            continue
+
+                        raw_sec = parts[-1].replace("Sek.", "").replace(".", "").strip()
+                        sekunden = float(raw_sec)
+
+                        records.append({
+                            "App": app_name,
+                            "Datum": date_from_name,
+                            "Minuten": sekunden / 60
+                        })
+                        continue
+                    except ValueError:
+                        pass
+
+                # FORMAT 3: Maltes Format -> App, Datum, Sekunden
+                if len(parts) >= 3:
+                    try:
+                        app_name = parts[0]
+                        datum = parts[1]
+                        sekunden = float(parts[2].replace(",", "."))
                         records.append({
                             "App": app_name,
                             "Datum": datum,
                             "Minuten": sekunden / 60
                         })
-                    except (ValueError, IndexError): continue
+                    except (ValueError, IndexError):
+                        continue
+
     except Exception as e:
         logger.error(f"Fehler bei Datei {file_path}: {e}")
+
     return records
 
 def get_available_files(person_key: str) -> List[str]:
@@ -95,7 +123,11 @@ def index():
         app_summary = df.groupby("App")["Minuten"].sum().sort_values(ascending=False).reset_index()
         top5 = app_summary.head(5).to_dict(orient="records")
         # Wichtig für den Graph: Nach Datum summieren und sortieren
-        df_daily = df.groupby("Datum")["Minuten"].sum().reset_index().sort_values("Datum")
+        df_daily = df.groupby("Datum")["Minuten"].sum().reset_index()
+
+        df_daily["SortDate"] = pd.to_datetime(df_daily["Datum"], format="%d.%m", errors="coerce")
+        df_daily = df_daily.sort_values("SortDate").drop(columns=["SortDate"])
+
         time_series = df_daily.to_dict(orient="records")
         app_count = len(app_summary)
     else:
@@ -114,4 +146,4 @@ def index():
     )
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)ard_data)
+    app.run(debug=True, port=5000)
