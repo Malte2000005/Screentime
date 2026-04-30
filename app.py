@@ -1,19 +1,22 @@
 import os
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import pandas as pd
 from flask import Flask, render_template, request
 
 # --- LOGGING ---
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
 PEOPLE: Dict[str, Dict[str, str]] = {
     "Malte": {"label": "Malte", "folder": "data/Malte"},
-    "Julian": {"label": "Julian", "folder": "data/Julian"}
+    "Julian": {"label": "Julian", "folder": "data/Julian"},
 }
+
 
 def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
     """
@@ -30,7 +33,7 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
-                line = line.strip().replace('\u200e', '')
+                line = line.strip().replace("\u200e", "")
                 if not line:
                     continue
 
@@ -45,11 +48,13 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
                     try:
                         app_name = parts[0]
                         minuten = float(parts[1].replace(",", "."))
-                        records.append({
-                            "App": app_name,
-                            "Datum": date_from_name,
-                            "Minuten": minuten
-                        })
+                        records.append(
+                            {
+                                "App": app_name,
+                                "Datum": date_from_name,
+                                "Minuten": minuten,
+                            }
+                        )
                         continue
                     except ValueError:
                         pass
@@ -64,11 +69,13 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
                         raw_sec = parts[-1].replace("Sek.", "").replace(".", "").strip()
                         sekunden = float(raw_sec)
 
-                        records.append({
-                            "App": app_name,
-                            "Datum": date_from_name,
-                            "Minuten": sekunden / 60
-                        })
+                        records.append(
+                            {
+                                "App": app_name,
+                                "Datum": date_from_name,
+                                "Minuten": sekunden / 60,
+                            }
+                        )
                         continue
                     except ValueError:
                         pass
@@ -79,11 +86,9 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
                         app_name = parts[0]
                         datum = parts[1]
                         sekunden = float(parts[2].replace(",", "."))
-                        records.append({
-                            "App": app_name,
-                            "Datum": datum,
-                            "Minuten": sekunden / 60
-                        })
+                        records.append(
+                            {"App": app_name, "Datum": datum, "Minuten": sekunden / 60}
+                        )
                     except (ValueError, IndexError):
                         continue
 
@@ -92,12 +97,14 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
 
     return records
 
+
 def get_available_files(person_key: str) -> List[str]:
     folder = PEOPLE[person_key]["folder"]
     if not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
         return []
     return sorted([f for f in os.listdir(folder) if f.endswith(".csv")])
+
 
 @app.route("/")
 def index():
@@ -111,7 +118,9 @@ def index():
     all_records = []
 
     # Dateien laden
-    files_to_read = [selected_file] if selected_file else get_available_files(selected_person)
+    files_to_read = (
+        [selected_file] if selected_file else get_available_files(selected_person)
+    )
     for f in files_to_read:
         if f:
             all_records.extend(parse_any_csv(os.path.join(folder, f)))
@@ -120,12 +129,19 @@ def index():
 
     if not df.empty:
         total_min = round(df["Minuten"].sum(), 2)
-        app_summary = df.groupby("App")["Minuten"].sum().sort_values(ascending=False).reset_index()
+        app_summary = (
+            df.groupby("App")["Minuten"]
+            .sum()
+            .sort_values(ascending=False)
+            .reset_index()
+        )
         top5 = app_summary.head(5).to_dict(orient="records")
         # Wichtig für den Graph: Nach Datum summieren und sortieren
         df_daily = df.groupby("Datum")["Minuten"].sum().reset_index()
 
-        df_daily["SortDate"] = pd.to_datetime(df_daily["Datum"], format="%d.%m", errors="coerce")
+        df_daily["SortDate"] = pd.to_datetime(
+            df_daily["Datum"], format="%d.%m", errors="coerce"
+        )
         df_daily = df_daily.sort_values("SortDate").drop(columns=["SortDate"])
 
         time_series = df_daily.to_dict(orient="records")
@@ -142,9 +158,14 @@ def index():
         total_minutes=total_min,
         top5=top5,
         time_series=time_series,
-        app_count=app_count
+        app_count=app_count,
     )
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+<<<<<<< HEAD
 print("Main Branch")
+=======
+print("Branch 1")
+>>>>>>> branch1
