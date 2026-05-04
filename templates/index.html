@@ -6,61 +6,166 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
+    <div class="background-glow"></div>
+
     <div class="container">
-        <h1>Bildschirmzeit Dashboard</h1>
+        <header class="hero">
+            <p class="eyebrow">Digital Usage Analytics</p>
+            <h1>Bildschirmzeit Dashboard</h1>
+            <p class="subtitle">
+                Analyse deiner Smartphone-Nutzung über das Semester hinweg
+            </p>
+        </header>
 
-        <div class="card">
+        <section class="card glass-card">
             <h2>Filter</h2>
-            <form method="get" action="/">
-                <label>Person:</label>
-                <select name="person" onchange="this.form.submit()">
-                    {% for key, val in people.items() %}
-                    <option value="{{ key }}" {% if key == selected_person %}selected{% endif %}>{{ val.label }}</option>
-                    {% endfor %}
-                </select>
 
-                <label>Datei:</label>
-                <select name="file" onchange="this.form.submit()">
-                    <option value="">Gesamtes Semester</option>
-                    {% for f in available_files %}
-                    <option value="{{ f }}" {% if f == selected_file %}selected{% endif %}>{{ f }}</option>
-                    {% endfor %}
-                </select>
+            <form method="get" action="/" class="filter-form">
+                <div class="filter-group">
+                    <label>Person</label>
+                    <select name="person" onchange="this.form.submit()">
+                        {% for key, val in people.items() %}
+                        <option value="{{ key }}" {% if key == selected_person %}selected{% endif %}>
+                            {{ val.label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Datei</label>
+                    <select name="file" onchange="this.form.submit()">
+                        <option value="">Gesamtes Semester</option>
+                        {% for file_name in available_files %}
+                        <option value="{{ file_name }}" {% if file_name == selected_file %}selected{% endif %}>
+                            {{ file_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <input type="hidden" name="category" value="{{ selected_category }}">
             </form>
-        </div>
+        </section>
 
-        <div class="stats-grid">
-            <div class="card">
-                <h3>Gesamtzeit</h3>
-                <p class="big-number">{{ total_minutes }} Min</p>
+        <section class="category-tabs">
+            <form method="get" action="/" class="filter-row">
+                <input type="hidden" name="person" value="{{ selected_person }}">
+                <input type="hidden" name="file" value="{{ selected_file }}">
+
+                <button class="toggle-button {% if selected_category == 'all' %}active{% endif %}" name="category" value="all">
+                    Alle Apps
+                </button>
+
+                <button class="toggle-button {% if selected_category == 'social' %}active{% endif %}" name="category" value="social">
+                    Social Media
+                </button>
+
+                <button class="toggle-button {% if selected_category == 'productivity' %}active{% endif %}" name="category" value="productivity">
+                    Produktivität
+                </button>
+            </form>
+        </section>
+
+        <section class="stats-grid">
+            <div class="metric-card">
+                <p class="metric-label">Minuten Gesamt</p>
+                <p class="big-number">{{ total_minutes }}</p>
+                <p class="metric-subline">Minuten im ausgewählten Zeitraum</p>
             </div>
-            <div class="card">
-                <h3>Apps gesamt</h3>
+
+            <div class="metric-card">
+                <p class="metric-label">Apps Gesamt</p>
                 <p class="big-number">{{ app_count }}</p>
+                <p class="metric-subline">erkannte Apps in der Auswertung</p>
             </div>
-        </div>
+        </section>
 
-        <div class="card">
-            <h2>Zeitliche Entwicklung</h2>
-            <div style="height: 300px;">
-                <canvas id="timeChart"></canvas>
+        <section class="dashboard-grid">
+            <div class="card chart-card">
+                <h2>Zeitliche Entwicklung</h2>
+                <p class="chart-info">Tägliche Bildschirmzeit in Minuten</p>
+                <div class="chart-wrapper">
+                    <canvas id="timeChart"></canvas>
+                </div>
             </div>
-        </div>
 
-        <div class="card">
-            <h2>Top 5 Apps</h2>
-            <table>
-                <thead>
-                    <tr><th>App</th><th>Minuten</th></tr>
-                </thead>
-                <tbody>
-                    {% for app in top5 %}
-                    <tr><td>{{ app.App }}</td><td>{{ app.Minuten|round(2) }}</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            <div class="card">
+                <h2>Top 5 Apps</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>App</th>
+                            <th>Minuten</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in top5 %}
+                        <tr>
+                            <td>{{ app.App }}</td>
+                            <td>{{ app.Minuten|round(0)|int }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Calendar Heatmap</h2>
+            <p class="chart-info">
+                Niedrigste Nutzung ist knallgrün, höchste Nutzung ist knallrot.
+            </p>
+
+            <div class="heatmap-grid">
+                {% for day in heatmap_data %}
+                <div class="heatmap-day {{ day.level }}">
+                    <span class="heatmap-date">{{ day.date }}</span>
+                    <span class="heatmap-minutes">{{ day.minutes }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="heatmap-legend">
+                <span>niedrig</span>
+                <div class="legend-box legend-green"></div>
+                <div class="legend-box legend-lime"></div>
+                <div class="legend-box legend-yellow"></div>
+                <div class="legend-box legend-orange"></div>
+                <div class="legend-box legend-red"></div>
+                <span>hoch</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Vergleichsgrößen</h2>
+
+            <div class="comparison-grid">
+                {% for item in comparison_data %}
+                <div class="comparison-card">
+                    <p class="comparison-title">{{ item.title }}</p>
+                    <p class="comparison-value">{{ item.value }}</p>
+                    <p class="comparison-text">{{ item.text }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Insights</h2>
+
+            <div class="story-grid">
+                {% for item in story_texts %}
+                <div class="story-card">
+                    <p class="story-title">{{ item.title }}</p>
+                    <p class="story-text">{{ item.text }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
     </div>
 
     <script>
@@ -75,16 +180,45 @@
                     datasets: [{
                         label: 'Minuten pro Tag',
                         data: timeData.map(d => d.Minuten),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.18)',
+                        pointBackgroundColor: '#ef4444',
+                        pointBorderColor: '#ffffff',
+                        pointRadius: 4,
+                        borderWidth: 3,
                         fill: true,
-                        tension: 0.2
+                        tension: 0.35
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } }
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e5e7eb'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.18)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#cbd5e1'
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.18)'
+                            }
+                        }
+                    }
                 }
             });
         }
