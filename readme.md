@@ -40,3 +40,7 @@ project/
 │   └── Malte/
 ├── README.md
 └── .gitignore
+
+## Aufgabenverteilung
+Julian: CSV Dateien einlesen lassen und formatieren, Heatmap, 
+Malte: CSV Dateien einlesen lassen und formatieren, Storytelling, logger
