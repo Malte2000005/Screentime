@@ -42,5 +42,5 @@ project/
 └── .gitignore
 
 ## Aufgabenverteilung
-Julian: CSV Dateien einlesen lassen und formatieren, Heatmap, 
-Malte: CSV Dateien einlesen lassen und formatieren, Storytelling, logger
+Julian: CSV Dateien einlesen lassen und formatieren, Heatmap, Error handling, GUI Interface
+Malte: CSV Dateien einlesen lassen und formatieren, Storytelling, logger konfiguration, GUI Interface
