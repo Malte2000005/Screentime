@@ -4,7 +4,9 @@ from typing import List, Dict, Any
 import pandas as pd
 from flask import Flask, render_template, request
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -56,11 +58,13 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
 
                 if len(parts) == 2:
                     try:
-                        records.append({
-                            "App": parts[0],
-                            "Datum": date_from_name,
-                            "Minuten": float(parts[1].replace(",", "."))
-                        })
+                        records.append(
+                            {
+                                "App": parts[0],
+                                "Datum": date_from_name,
+                                "Minuten": float(parts[1].replace(",", ".")),
+                            }
+                        )
                         continue
                     except ValueError:
                         pass
@@ -68,22 +72,26 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
                 if "Sek." in line:
                     try:
                         seconds = parts[-1].replace("Sek.", "").replace(".", "").strip()
-                        records.append({
-                            "App": parts[0],
-                            "Datum": date_from_name,
-                            "Minuten": float(seconds) / 60
-                        })
+                        records.append(
+                            {
+                                "App": parts[0],
+                                "Datum": date_from_name,
+                                "Minuten": float(seconds) / 60,
+                            }
+                        )
                         continue
                     except ValueError:
                         pass
 
                 if len(parts) >= 3:
                     try:
-                        records.append({
-                            "App": parts[0],
-                            "Datum": parts[1],
-                            "Minuten": float(parts[2].replace(",", ".")) / 60
-                        })
+                        records.append(
+                            {
+                                "App": parts[0],
+                                "Datum": parts[1],
+                                "Minuten": float(parts[2].replace(",", ".")) / 60,
+                            }
+                        )
                     except ValueError:
                         pass
 
@@ -112,9 +120,7 @@ def prepare_daily_series(df: pd.DataFrame) -> pd.DataFrame:
     df_daily = df.groupby("Datum")["Minuten"].sum().reset_index()
 
     df_daily["Sort"] = pd.to_datetime(
-        df_daily["Datum"].astype(str) + ".2026",
-        format="%d.%m.%Y",
-        errors="coerce"
+        df_daily["Datum"].astype(str) + ".2026", format="%d.%m.%Y", errors="coerce"
     )
 
     df_daily = df_daily.sort_values("Sort", na_position="last")
@@ -159,11 +165,13 @@ def build_heatmap(df_daily: pd.DataFrame) -> List[Dict[str, Any]]:
         else:
             ratio = (minutes - min_value) / value_range
 
-        heatmap.append({
-            "date": row["Datum"],
-            "minutes": int(round(minutes, 0)),
-            "level": get_heatmap_level(ratio)
-        })
+        heatmap.append(
+            {
+                "date": row["Datum"],
+                "minutes": int(round(minutes, 0)),
+                "level": get_heatmap_level(ratio),
+            }
+        )
 
     return heatmap
 
@@ -176,30 +184,37 @@ def build_comparison(total_minutes: int, day_count: int) -> List[Dict[str, str]]
         {
             "title": "Gesamtzeit",
             "value": f"{total_minutes / 60:.1f} h",
-            "text": "So viel Zeit wurde im ausgewählten Zeitraum insgesamt am Handy verbracht."
+            "text": "So viel Zeit wurde im ausgewählten Zeitraum insgesamt am Handy verbracht.",
         },
         {
             "title": "Arbeitstage",
             "value": f"{total_minutes / 480:.1f}",
-            "text": "Das entspricht ungefähr so vielen vollen 8-Stunden-Tagen."
+            "text": "Das entspricht ungefähr so vielen vollen 8-Stunden-Tagen.",
         },
         {
             "title": "Vorlesungen",
             "value": f"{total_minutes / 90:.1f}",
-            "text": "Umgerechnet wären das ungefähr so viele 90-Minuten-Vorlesungen."
+            "text": "Umgerechnet wären das ungefähr so viele 90-Minuten-Vorlesungen.",
         },
         {
             "title": "Ø pro Tag",
             "value": f"{average:.0f} Min",
-            "text": "Durchschnittliche tägliche Nutzung im betrachteten Zeitraum."
+            "text": "Durchschnittliche tägliche Nutzung im betrachteten Zeitraum.",
         },
     ]
 
 
-def build_story(df: pd.DataFrame, df_daily: pd.DataFrame, app_summary: pd.DataFrame) -> List[Dict[str, str]]:
+def build_story(
+    df: pd.DataFrame, df_daily: pd.DataFrame, app_summary: pd.DataFrame
+) -> List[Dict[str, str]]:
     """Erstellt kurze Insight-Texte."""
     if df.empty or df_daily.empty or app_summary.empty:
-        return [{"title": "Keine Daten", "text": "Für die aktuelle Auswahl liegen keine Daten vor."}]
+        return [
+            {
+                "title": "Keine Daten",
+                "text": "Für die aktuelle Auswahl liegen keine Daten vor.",
+            }
+        ]
 
     max_day = df_daily.loc[df_daily["Minuten"].idxmax()]
     avg_day = df_daily["Minuten"].mean()
@@ -209,29 +224,32 @@ def build_story(df: pd.DataFrame, df_daily: pd.DataFrame, app_summary: pd.DataFr
     productivity_sum = df[df["Kategorie"] == "productivity"]["Minuten"].sum()
 
     if social_sum > productivity_sum:
-        category_text = "Social-Media-Apps nehmen im betrachteten Zeitraum mehr Zeit ein."
+        category_text = (
+            "Social-Media-Apps nehmen im betrachteten Zeitraum mehr Zeit ein."
+        )
     elif productivity_sum > social_sum:
-        category_text = "Produktivitäts-Apps nehmen im betrachteten Zeitraum mehr Zeit ein."
+        category_text = (
+            "Produktivitäts-Apps nehmen im betrachteten Zeitraum mehr Zeit ein."
+        )
     else:
-        category_text = "Social Media und Produktivitäts-Apps sind ungefähr gleich stark vertreten."
+        category_text = (
+            "Social Media und Produktivitäts-Apps sind ungefähr gleich stark vertreten."
+        )
 
     return [
         {
             "title": "Nutzungs-Peak",
-            "text": f"Der stärkste Tag war der {max_day['Datum']} mit {max_day['Minuten']:.0f} Minuten."
+            "text": f"Der stärkste Tag war der {max_day['Datum']} mit {max_day['Minuten']:.0f} Minuten.",
         },
         {
             "title": "Tagesdurchschnitt",
-            "text": f"Im Durchschnitt liegt die Bildschirmzeit bei rund {avg_day:.0f} Minuten pro Tag."
+            "text": f"Im Durchschnitt liegt die Bildschirmzeit bei rund {avg_day:.0f} Minuten pro Tag.",
         },
         {
             "title": "Dominierende App",
-            "text": f"Die meistgenutzte App ist {top_app['App']} mit insgesamt {top_app['Minuten']:.0f} Minuten."
+            "text": f"Die meistgenutzte App ist {top_app['App']} mit insgesamt {top_app['Minuten']:.0f} Minuten.",
         },
-        {
-            "title": "Kategorie-Vergleich",
-            "text": category_text
-        },
+        {"title": "Kategorie-Vergleich", "text": category_text},
     ]
 
 
@@ -247,7 +265,9 @@ def index():
     folder = PEOPLE[selected_person]["folder"]
     records = []
 
-    files_to_read = [selected_file] if selected_file else get_available_files(selected_person)
+    files_to_read = (
+        [selected_file] if selected_file else get_available_files(selected_person)
+    )
 
     for file_name in files_to_read:
         if file_name:
@@ -294,7 +314,7 @@ def index():
         time_series=df_daily.to_dict("records"),
         heatmap_data=build_heatmap(df_daily),
         comparison_data=build_comparison(total_minutes, len(df_daily)),
-        story_texts=build_story(df, df_daily, app_summary)
+        story_texts=build_story(df, df_daily, app_summary),
     )
 
 
