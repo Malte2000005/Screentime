@@ -1,6 +1,7 @@
 import os
 import logging
 from typing import List, Dict, Any
+
 import pandas as pd
 from flask import Flask, render_template, request
 
@@ -63,7 +64,7 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
                         })
                         continue
                     except ValueError:
-                        pass
+                        logger.warning(f"Ungültige Minutenangabe in Datei {file_path}: {line}")
 
                 if "Sek." in line:
                     try:
@@ -75,7 +76,7 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
                         })
                         continue
                     except ValueError:
-                        pass
+                        logger.warning(f"Ungültige Sekundenangabe in Datei {file_path}: {line}")
 
                 if len(parts) >= 3:
                     try:
@@ -85,23 +86,35 @@ def parse_any_csv(file_path: str) -> List[Dict[str, Any]]:
                             "Minuten": float(parts[2].replace(",", ".")) / 60
                         })
                     except ValueError:
-                        pass
+                        logger.warning(f"Ungültige CSV-Zeile in Datei {file_path}: {line}")
 
-    except Exception as error:
-        logger.error(f"Fehler bei Datei {file_path}: {error}")
+    except FileNotFoundError:
+        logger.error(f"Datei nicht gefunden: {file_path}")
+    except OSError as error:
+        logger.error(f"Fehler beim Lesen der Datei {file_path}: {error}")
 
     return records
 
 
 def get_available_files(person_key: str) -> List[str]:
-    """Gibt alle CSV-Dateien einer Person zurück."""
+    """Gibt alle CSV-Dateien einer Person zurück und behandelt fehlende Ordner sauber."""
     folder = PEOPLE[person_key]["folder"]
 
-    if not os.path.exists(folder):
-        os.makedirs(folder, exist_ok=True)
-        return []
+    try:
+        if not os.path.exists(folder):
+            logger.warning(f"CSV-Ordner nicht gefunden: {folder}")
+            os.makedirs(folder, exist_ok=True)
+            logger.info(f"CSV-Ordner wurde neu erstellt: {folder}")
+            return []
 
-    return sorted([file for file in os.listdir(folder) if file.endswith(".csv")])
+        files = sorted([file for file in os.listdir(folder) if file.endswith(".csv")])
+        logger.info(f"{len(files)} CSV-Dateien für {person_key} gefunden.")
+
+        return files
+
+    except OSError as error:
+        logger.error(f"Fehler beim Lesen des CSV-Ordners {folder}: {error}")
+        return []
 
 
 def prepare_daily_series(df: pd.DataFrame) -> pd.DataFrame:
@@ -196,7 +209,11 @@ def build_comparison(total_minutes: int, day_count: int) -> List[Dict[str, str]]
     ]
 
 
-def build_story(df: pd.DataFrame, df_daily: pd.DataFrame, app_summary: pd.DataFrame) -> List[Dict[str, str]]:
+def build_story(
+    df: pd.DataFrame,
+    df_daily: pd.DataFrame,
+    app_summary: pd.DataFrame
+) -> List[Dict[str, str]]:
     """Erstellt kurze Insight-Texte."""
     if df.empty or df_daily.empty or app_summary.empty:
         return [{"title": "Keine Daten", "text": "Für die aktuelle Auswahl liegen keine Daten vor."}]
@@ -242,16 +259,19 @@ def index():
     selected_category = request.args.get("category", "all")
 
     if selected_person not in PEOPLE:
+        logger.warning(f"Ungültige Person ausgewählt: {selected_person}")
         selected_person = "Malte"
 
     folder = PEOPLE[selected_person]["folder"]
     records = []
 
     files_to_read = [selected_file] if selected_file else get_available_files(selected_person)
+    logger.info(f"Ausgewählte Person: {selected_person}, geladene Dateien: {files_to_read}")
 
     for file_name in files_to_read:
         if file_name:
-            records.extend(parse_any_csv(os.path.join(folder, file_name)))
+            file_path = os.path.join(folder, file_name)
+            records.extend(parse_any_csv(file_path))
 
     df = pd.DataFrame(records)
 
